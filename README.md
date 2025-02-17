@@ -27,5 +27,5 @@ This repository provides scripts and modified library files to convert [3DBAG](h
 1. **Clone this repository**:
 
    ```bash
-   git clone https://github.com/your-username/cityjson-to-ifc-batch.git
-   cd cityjson-to-ifc-batch
+   git clone https://github.com/tudelft3d/IFC3DBAG.git
+   cd IFC3DBAG
