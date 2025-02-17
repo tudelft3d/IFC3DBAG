@@ -94,28 +94,9 @@ This repository provides scripts and modified library files to convert [3DBAG](h
 
 ---
 
-## License
-
-This project incorporates code from the ifccityjson library, which is distributed under the LGPLv3 (or a similar license).
-
-Your repository should:
-
-- Retain the same license OR
-- Use a license compatible with the LGPLv3.
-
-Include a LICENSE file and make sure you adhere to any additional requirements (such as listing changes, including copyright notices, etc.).
-
----
 
 ## Contact
 
-For questions or suggestions, feel free to open an issue or contact [your email / GitHub handle].
+For questions or suggestions, feel free to open an issue.
 
----
-
-## Additional Tips
-
-- **Validate Conversions**: Always check the output IFC files in a compatible IFC viewer (e.g., BlenderBIM, FreeCAD, or other IFC validation tools) to ensure accuracy.
-- **Documentation**: Keep this README updated if you add new features or change CLI parameters.
-- **Automated Testing**: Consider adding unit tests or sample data tests to ensure consistent conversion results over time.
 
