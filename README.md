@@ -34,12 +34,16 @@ This repository provides scripts and modified library files to convert [3DBAG](h
 
 2. **(Optional) Create a virtual environment:**
 
+For linux:
    ```bash
-   python -m venv venv
-   source venv/bin/activate   # Linux/Mac
-   venv\Scripts\activate      # Windows
+   python -m venv .venv
+   source .venv/bin/activate  
    ```
-
+For Windows:
+   ```
+   python -m venv .venv
+   .venv\Scripts\activate      
+   ```
 3. **Install dependencies**:
 
    ```bash
@@ -52,26 +56,14 @@ This repository provides scripts and modified library files to convert [3DBAG](h
 
 1. **Batch Convert CityJSON to IFC**
 
-   Make the `batch_converter` script executable or run it using Python:
-
    ```bash
-   chmod +x batch_converter                                                     # Make it executable (Linux/Mac)
-   ./batch_converter /path/to/cityjson_folder /path/to/output_ifc_folder        # Run directly
-   python batch_converter /path/to/cityjson_folder /path/to/output_ifc_folder   # Or via Python
+   python3 batch_converter.py --input_dir /dir/to/cityjsongz
    ```
 
-2. **Parameters:**
+2. **Arguments:**
 
-   - `/path/to/cityjson_folder`: Directory containing one or more `.json` (CityJSON) files from 3DBAG.
-   - `/path/to/output_ifc_folder`: Directory where the generated IFC files will be saved.
-
-3. **Example Execution**:
-
-   ```bash
-   python batch_converter ./cityjson_data ./ifc_output
-   ```
-
-   This command processes all CityJSON files in `./cityjson_data` and saves IFC files into `./ifc_output`.
+   - `--input_dir`: Used to difine the directory containing one or more compressed CityJSON files (`city.json.gz`) (CityJSON) from 3DBAG.
+   - `--ignore_duplicate`: Ignore duplicate JSON keys in the CityJSON files.
 
 ---
 
