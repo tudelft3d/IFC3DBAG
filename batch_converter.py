@@ -9,7 +9,8 @@ import gzip
 
 from cjio import errors, cityjson
 from cityjson2ifc import Cityjson2ifc
-import concurrent.futures
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from pathlib import Path
 
 def load_cityjson(infile, ignore_duplicate_keys=False):
     """
@@ -72,59 +73,59 @@ def unzip_cityjson_files(input_dir: Path):
         sys.exit(1)
     click.echo(f"Total unzipped CityJSON files: {len(cityjson_files)}")
 
-    def process_cityjson_file(cityjson_file: Path) -> None:
-        zip_filename = cityjson_file.replace(".city.json", ".ifc.zip")
-        if os.path.isfile(zip_filename):
-            click.echo(f"Zip file {zip_filename} exists. Skipping {cityjson_file}.")
-            try:
-                os.remove(cityjson_file)
-            except Exception:
-                pass
-            return
-
-        output_ifc_files = []
+def process_cityjson_file(cityjson_file: Path, ignore_duplicate: bool) -> None:
+    zip_filename = cityjson_file.replace(".city.json", ".ifc.zip")
+    if os.path.isfile(zip_filename):
+        click.echo(f"Zip file {zip_filename} exists. Skipping {cityjson_file}.")
         try:
-            with open(cityjson_file, "r") as infile:
-                click.echo(f"Parsing {infile.name} ...")
-                cm = load_cityjson(infile, ignore_duplicate_keys=ignore_duplicate)
-                for lod in lods:
-                    converter = Cityjson2ifc()
-                    output_ifc_path = cityjson_file.replace(".city.json", f"-{lod}.ifc")
-                    converter.configuration(
-                        name_project="3DBAG Project",
-                        name_site="3DBAG Site",
-                        name_person_family="3Dgeoinfo",
-                        name_person_given="3DGI/",
-                        lod=lod,
-                        file_destination=output_ifc_path
-                    )
-                    try:
-                        converter.convert(cm)
-                        #click.echo(f"Conversion completed for {cityjson_file} at LoD {lod}.")
-                        output_ifc_files.append(output_ifc_path)
-                    except Exception as ex:
-                        #click.echo(f"Failed to convert {cityjson_file} at LoD {lod}.\nError: {ex}")
-                        continue
-                if output_ifc_files:
-                    with zipfile.ZipFile(zip_filename, 'w') as zf:
-                        for ifc_file in output_ifc_files:
-                            zf.write(ifc_file, os.path.basename(ifc_file))
-                    click.echo(f"Zipped IFC files into {zip_filename}.")
-        except Exception as e:
-            click.echo(f"Error processing {cityjson_file}: {e}")
-        finally:
-            for ifc_file in output_ifc_files:
+            os.remove(cityjson_file)
+        except Exception:
+            pass
+        return
+
+    output_ifc_files = []
+    try:
+        with open(cityjson_file, "r") as infile:
+            click.echo(f"Parsing {infile.name} ...")
+            cm = load_cityjson(infile, ignore_duplicate_keys=ignore_duplicate)
+            for lod in lods:
+                converter = Cityjson2ifc()
+                output_ifc_path = cityjson_file.replace(".city.json", f"-{lod}.ifc")
+                converter.configuration(
+                    name_project="3DBAG Project",
+                    name_site="3DBAG Site",
+                    name_person_family="3Dgeoinfo",
+                    name_person_given="3DGI/",
+                    lod=lod,
+                    file_destination=output_ifc_path
+                )
                 try:
-                    os.remove(ifc_file)
-                    #click.echo(f"Deleted IFC file: {ifc_file}")
-                except Exception:
-                    pass
+                    converter.convert(cm)
+                    #click.echo(f"Conversion completed for {cityjson_file} at LoD {lod}.")
+                    output_ifc_files.append(output_ifc_path)
+                except Exception as ex:
+                    #click.echo(f"Failed to convert {cityjson_file} at LoD {lod}.\nError: {ex}")
+                    continue
+            if output_ifc_files:
+                with zipfile.ZipFile(zip_filename, 'w') as zf:
+                    for ifc_file in output_ifc_files:
+                        zf.write(ifc_file, os.path.basename(ifc_file))
+                click.echo(f"Zipped IFC files into {zip_filename}.")
+    except Exception as e:
+        click.echo(f"Error processing {cityjson_file}: {e}")
+    finally:
+        for ifc_file in output_ifc_files:
             try:
-                os.remove(cityjson_file)
-                #click.echo(f"Cleaned up temporary file: {cityjson_file}")
+                os.remove(ifc_file)
+                #click.echo(f"Deleted IFC file: {ifc_file}")
             except Exception:
                 pass
-        click.echo(f"Processed {cityjson_file} and created {zip_filename}.")
+        # try:
+        #     os.remove(cityjson_file)
+        #     #click.echo(f"Cleaned up temporary file: {cityjson_file}")
+        # except Exception:
+        #     pass
+    click.echo(f"Processed {cityjson_file} and created {zip_filename}.")
 
 
 @click.command()
@@ -149,10 +150,10 @@ def main(input_dir, ignore_duplicate, unzip_files):
     # Define which LODs to export
     lods = ["0", "1.2", "1.3", "2.2"]
 
-    # Use ThreadPoolExecutor to process files in parallel
-    with concurrent.futures.ThreadPoolExecutor(max_workers=24) as executor:
-        futures = [executor.submit(process_cityjson_file, cityjson_file) for cityjson_file in cityjson_files]
-        for future in concurrent.futures.as_completed(futures):
+    Use ProcessPoolExecutor to process files in parallel
+    with ProcessPoolExecutor(max_workers=10) as executor:
+        futures = [executor.submit(process_cityjson_file, (cityjson_file, ignore_duplicate)) for cityjson_file in cityjson_files]
+        for future in as_completed(futures):
             result = future.result()
 
     click.echo("All CityJSON files have been processed.")
