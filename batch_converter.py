@@ -12,6 +12,9 @@ from cityjson2ifc import Cityjson2ifc
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
+# Define which LODs to export
+LODS = ["0", "1.2", "1.3", "2.2"]
+
 def load_cityjson(infile, ignore_duplicate_keys=False):
     """
     Loads a CityJSON file using cjio's cityjson.reader with optional duplicate key ignoring.
@@ -88,7 +91,7 @@ def process_cityjson_file(cityjson_file: Path, ignore_duplicate: bool) -> None:
         with open(cityjson_file, "r") as infile:
             click.echo(f"Parsing {infile.name} ...")
             cm = load_cityjson(infile, ignore_duplicate_keys=ignore_duplicate)
-            for lod in lods:
+            for lod in LODS:
                 converter = Cityjson2ifc()
                 output_ifc_path = cityjson_file.replace(".city.json", f"-{lod}.ifc")
                 converter.configuration(
@@ -147,12 +150,10 @@ def main(input_dir, ignore_duplicate, unzip_files):
     cityjson_files = glob.glob(os.path.join(input_dir, "**", "*.city.json"), recursive=True)
     click.echo(f"Found {len(cityjson_files)} .city.json files.")
 
-    # Define which LODs to export
-    lods = ["0", "1.2", "1.3", "2.2"]
 
-    Use ProcessPoolExecutor to process files in parallel
+    #Use ProcessPoolExecutor to process files in parallel
     with ProcessPoolExecutor(max_workers=10) as executor:
-        futures = [executor.submit(process_cityjson_file, (cityjson_file, ignore_duplicate)) for cityjson_file in cityjson_files]
+        futures = [executor.submit(process_cityjson_file, cityjson_file, ignore_duplicate) for cityjson_file in cityjson_files]
         for future in as_completed(futures):
             result = future.result()
 
