@@ -151,8 +151,8 @@ def main(input_dir, ignore_duplicate, unzip_files):
     click.echo(f"Found {len(cityjson_files)} .city.json files.")
 
 
-    #Use ProcessPoolExecutor to process files in parallel
-    with ProcessPoolExecutor(max_workers=10) as executor:
+    # Use ProcessPoolExecutor to process files in parallel
+    with ProcessPoolExecutor(max_workers=16) as executor:
         futures = [executor.submit(process_cityjson_file, cityjson_file, ignore_duplicate) for cityjson_file in cityjson_files]
         for future in as_completed(futures):
             result = future.result()
