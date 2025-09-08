@@ -46,57 +46,36 @@ def load_cityjson(infile, ignore_duplicate_keys=False):
 
     return cm
 
-@click.command()
-@click.option('--input_dir', default="/data/amir/decompressed", show_default=True,
-              help="Directory containing .city.json.gz files.")
-@click.option('--ignore_duplicate', is_flag=True, default=False,
-              help="Ignore duplicate JSON keys in CityJSON files.")
-def main(input_dir, ignore_duplicate):
-    """
-    Finds all .city.json.gz files in the input directory, unzips them, converts each to IFC for multiple LoDs and zips them in one file.
-    """
-    # 1. Identify all .city.json.gz files recursively
-    input_dir = os.path.abspath(os.path.expanduser(input_dir))
-    # cityjson_gz_files = glob.glob(os.path.join(input_dir, "**", "*.city.json.gz"), recursive=True)
+def unzip_cityjson_files(input_dir: Path):
+    # Find all zipped files
+    cityjson_gz_files = glob.glob(os.path.join(input_dir, "**", "*.city.json.gz"), recursive=True)
+    if not cityjson_gz_files:
+        click.echo("No .city.json.gz files found in the specified directory.")
+        sys.exit(1)
 
-    # if not cityjson_gz_files:
-    #     click.echo("No .city.json.gz files found in the specified directory.")
-    #     sys.exit(1)
+    click.echo(f"Found {len(cityjson_gz_files)} .city.json.gz files.")
+    click.echo("Unzipping files...")
+    # Unzip the .city.json.gz files
+    cityjson_files = []
+    for gz_file in cityjson_gz_files:
+        try:
+            with gzip.open(gz_file, 'rb') as f_in:
+                cityjson_file = gz_file.replace('.gz', '')
+                with open(cityjson_file, 'wb') as f_out:
+                    f_out.write(f_in.read())
+            cityjson_files.append(cityjson_file)
+            click.echo(f"Unzipped {gz_file} to {cityjson_file}.")
+        except Exception as e:
+            click.echo(f"Failed to unzip {gz_file}: {e}")
+    if not cityjson_files:
+        click.echo("No valid CityJSON files found after unzipping.")
+        sys.exit(1)
+    click.echo(f"Total unzipped CityJSON files: {len(cityjson_files)}")
 
-    # click.echo(f"Found {len(cityjson_gz_files)} .city.json.gz files.")
-
-    # click.echo("Unzipping files...")
-    # # 2. Unzip the .city.json.gz files
-    # cityjson_files = []
-    # for gz_file in cityjson_gz_files:
-    #     try:
-    #         with gzip.open(gz_file, 'rb') as f_in:
-    #             cityjson_file = gz_file.replace('.gz', '')
-    #             with open(cityjson_file, 'wb') as f_out:
-    #                 f_out.write(f_in.read())
-    #         cityjson_files.append(cityjson_file)
-    #         click.echo(f"Unzipped {gz_file} to {cityjson_file}.")
-    #     except Exception as e:
-    #         click.echo(f"Failed to unzip {gz_file}: {e}")
-    # if not cityjson_files:
-    #     click.echo("No valid CityJSON files found after unzipping.")
-    #     sys.exit(1)
-    # click.echo(f"Total unzipped CityJSON files: {len(cityjson_files)}")
-
-
-    cityjson_files = glob.glob(os.path.join(input_dir, "**", "*.city.json"), recursive=True)
-    click.echo(f"Found {len(cityjson_files)} .city.json files.")
-
-
-    # Define which LODs to export
-    lods = ["0", "1.2", "1.3", "2.2"]
-
-    
-
-    def process_cityjson_file(cityjson_file):
+    def process_cityjson_file(cityjson_file: Path) -> None:
         zip_filename = cityjson_file.replace(".city.json", ".ifc.zip")
         if os.path.isfile(zip_filename):
-            click.echo(f"Zip file {zip_filename} found. Skipping {cityjson_file}.")
+            click.echo(f"Zip file {zip_filename} exists. Skipping {cityjson_file}.")
             try:
                 os.remove(cityjson_file)
             except Exception:
@@ -147,13 +126,34 @@ def main(input_dir, ignore_duplicate):
                 pass
         click.echo(f"Processed {cityjson_file} and created {zip_filename}.")
 
+
+@click.command()
+@click.option('--input_dir', default="/data/amir/decompressed", show_default=True,
+              help="Directory containing .city.json.gz files.")
+@click.option('--ignore_duplicate', is_flag=True, default=False,
+              help="Ignore duplicate JSON keys in CityJSON files.")
+@click.option('--unzip-files', is_flag=True, default=False,
+              help="Unzip .city.json.gz files before processing.")
+def main(input_dir, ignore_duplicate, unzip_files):
+    """
+    Finds all .city.json.gz files in the input directory, unzips them, converts each to IFC for multiple LoDs and zips them in one file.
+    """
+    input_dir = os.path.abspath(os.path.expanduser(input_dir))
+
+    if unzip_files:
+        unzip_cityjson_files(input_dir)
+
+    cityjson_files = glob.glob(os.path.join(input_dir, "**", "*.city.json"), recursive=True)
+    click.echo(f"Found {len(cityjson_files)} .city.json files.")
+
+    # Define which LODs to export
+    lods = ["0", "1.2", "1.3", "2.2"]
+
     # Use ThreadPoolExecutor to process files in parallel
     with concurrent.futures.ThreadPoolExecutor(max_workers=24) as executor:
         futures = [executor.submit(process_cityjson_file, cityjson_file) for cityjson_file in cityjson_files]
         for future in concurrent.futures.as_completed(futures):
-            # This will raise any exceptions that occurred in the threads
             result = future.result()
-            #print(result)
 
     click.echo("All CityJSON files have been processed.")
 
