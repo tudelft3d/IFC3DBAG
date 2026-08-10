@@ -107,7 +107,7 @@ def process_cityjson_file(cityjson_file: Path, ignore_duplicate: bool) -> None:
                     #click.echo(f"Conversion completed for {cityjson_file} at LoD {lod}.")
                     output_ifc_files.append(output_ifc_path)
                 except Exception as ex:
-                    #click.echo(f"Failed to convert {cityjson_file} at LoD {lod}.\nError: {ex}")
+                    click.echo(f"Failed to convert {cityjson_file} at LoD {lod}.\nError: {ex}")
                     continue
             if output_ifc_files:
                 with zipfile.ZipFile(zip_filename, 'w') as zf:
