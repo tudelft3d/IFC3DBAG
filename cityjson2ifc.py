@@ -458,16 +458,16 @@ class Cityjson2ifc:
         settings = {"version": version}
 
         file = ifcopenshell.file(schema=settings["version"])
-        file.wrapped_data.header.file_name.name = "\\"+ self.properties["file_destination"]+ ".ifc"
-        file.wrapped_data.header.file_name.time_stamp = (
+        file.header.file_name.name = "\\"+ self.properties["file_destination"]+ ".ifc"
+        file.header.file_name.time_stamp = (
                 datetime.utcnow().replace(tzinfo=timezone.utc).astimezone().replace(microsecond=0).isoformat()
             )
-        file.wrapped_data.header.file_name.preprocessor_version = "IfcOpenShell {}".format(ifcopenshell.version)
-        file.wrapped_data.header.file_name.originating_system = "IfcOpenShell {}".format(ifcopenshell.version)
-        file.wrapped_data.header.file_name.authorization = "3dgeoinfo/3DGI"
-        file.wrapped_data.header.file_description.description = ("ViewDefinition[DesignTransferView]",)
-        file.wrapped_data.header.file_name.organization = "H"
-        file.wrapped_data.header.file_name.author = "A"
+        file.header.file_name.preprocessor_version = "IfcOpenShell {}".format(ifcopenshell.version)
+        file.header.file_name.originating_system = "IfcOpenShell {}".format(ifcopenshell.version)
+        file.header.file_name.authorization = "3dgeoinfo/3DGI"
+        file.header.file_description.description = ("ViewDefinition[DesignTransferView]",)
+        file.header.file_name.organization = "H"
+        file.header.file_name.author = "A"
 
 
         return file
