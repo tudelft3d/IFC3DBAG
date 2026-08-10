@@ -114,6 +114,9 @@ def process_cityjson_file(cityjson_file: Path, ignore_duplicate: bool) -> None:
                     for ifc_file in output_ifc_files:
                         zf.write(ifc_file, os.path.basename(ifc_file))
                 click.echo(f"Zipped IFC files into {zip_filename}.")
+                click.echo(f"Processed {cityjson_file} and created {zip_filename}.")
+            else:
+                click.echo(f"No IFC files generated for {cityjson_file}. Skipping zip.")
     except Exception as e:
         click.echo(f"Error processing {cityjson_file}: {e}")
     finally:
@@ -128,7 +131,6 @@ def process_cityjson_file(cityjson_file: Path, ignore_duplicate: bool) -> None:
         #     #click.echo(f"Cleaned up temporary file: {cityjson_file}")
         # except Exception:
         #     pass
-    click.echo(f"Processed {cityjson_file} and created {zip_filename}.")
 
 
 @click.command()
