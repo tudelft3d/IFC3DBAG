@@ -9,7 +9,7 @@ import gzip
 
 from cjio import errors, cityjson
 from cityjson2ifc import Cityjson2ifc
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from multiprocessing import Pool
 from pathlib import Path
 
 # Define which LODs to export
@@ -141,14 +141,10 @@ def process_cityjson_file(cityjson_file: Path, ignore_duplicate: bool) -> None:
         for ifc_file in output_ifc_files:
             try:
                 os.remove(ifc_file)
-                #click.echo(f"Deleted IFC file: {ifc_file}")
             except Exception:
                 pass
-        # try:
-        #     os.remove(cityjson_file)
-        #     #click.echo(f"Cleaned up temporary file: {cityjson_file}")
-        # except Exception:
-        #     pass
+        del cm
+        gc.collect()
 
 
 @click.command()
@@ -173,11 +169,11 @@ def main(input_dir, ignore_duplicate, unzip_files, num_workers):
     click.echo(f"Found {len(cityjson_files)} .city.json files.")
 
 
-    # Use ProcessPoolExecutor to process files in parallel
-    with ProcessPoolExecutor(max_workers=num_workers) as executor:
-        futures = [executor.submit(process_cityjson_file, cityjson_file, ignore_duplicate) for cityjson_file in cityjson_files]
-        for future in as_completed(futures):
-            result = future.result()
+    # Use multiprocessing.Pool so workers restart every 5 files (prevents C-level memory leaks)
+    with Pool(num_workers, maxtasksperchild=5) as pool:
+        results = [pool.apply_async(process_cityjson_file, (cityjson_file, ignore_duplicate)) for cityjson_file in cityjson_files]
+        for r in results:
+            r.get()
 
     click.echo("All CityJSON files have been processed.")
 
