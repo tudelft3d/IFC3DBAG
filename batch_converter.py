@@ -140,7 +140,9 @@ def process_cityjson_file(cityjson_file: Path, ignore_duplicate: bool) -> None:
               help="Ignore duplicate JSON keys in CityJSON files.")
 @click.option('--unzip-files', is_flag=True, default=False,
               help="Unzip .city.json.gz files before processing.")
-def main(input_dir, ignore_duplicate, unzip_files):
+@click.option('--num-workers', type=int, default=2, show_default=True,
+              help="Number of parallel workers for processing.")
+def main(input_dir, ignore_duplicate, unzip_files, num_workers):
     """
     Finds all .city.json.gz files in the input directory, unzips them, converts each to IFC for multiple LoDs and zips them in one file.
     """
@@ -154,7 +156,7 @@ def main(input_dir, ignore_duplicate, unzip_files):
 
 
     # Use ProcessPoolExecutor to process files in parallel
-    with ProcessPoolExecutor(max_workers=2) as executor:
+    with ProcessPoolExecutor(max_workers=num_workers) as executor:
         futures = [executor.submit(process_cityjson_file, cityjson_file, ignore_duplicate) for cityjson_file in cityjson_files]
         for future in as_completed(futures):
             result = future.result()
