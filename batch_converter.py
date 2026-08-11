@@ -62,11 +62,19 @@ def unzip_cityjson_files(input_dir: Path):
     # Unzip the .city.json.gz files
     cityjson_files = []
     for gz_file in cityjson_gz_files:
+        cityjson_file = gz_file.replace('.gz', '')
+        if os.path.isfile(cityjson_file):
+            click.echo(f"Skipping unzip, already exists: {cityjson_file}")
+            cityjson_files.append(cityjson_file)
+            continue
         try:
             with gzip.open(gz_file, 'rb') as f_in:
-                cityjson_file = gz_file.replace('.gz', '')
                 with open(cityjson_file, 'wb') as f_out:
-                    f_out.write(f_in.read())
+                    while True:
+                        chunk = f_in.read(64 * 1024 * 1024)
+                        if not chunk:
+                            break
+                        f_out.write(chunk)
             cityjson_files.append(cityjson_file)
             click.echo(f"Unzipped {gz_file} to {cityjson_file}.")
         except Exception as e:
@@ -78,6 +86,8 @@ def unzip_cityjson_files(input_dir: Path):
 
 def process_cityjson_file(cityjson_file: Path, ignore_duplicate: bool) -> None:
     zip_filename = cityjson_file.replace(".city.json", ".ifc.zip")
+    zip_tmp = zip_filename + ".tmp"
+
     if os.path.isfile(zip_filename):
         click.echo(f"Zip file {zip_filename} exists. Skipping {cityjson_file}.")
         try:
@@ -85,6 +95,13 @@ def process_cityjson_file(cityjson_file: Path, ignore_duplicate: bool) -> None:
         except Exception:
             pass
         return
+
+    if os.path.isfile(zip_tmp):
+        click.echo(f"Removing stale temp file: {zip_tmp}")
+        try:
+            os.remove(zip_tmp)
+        except Exception:
+            pass
 
     output_ifc_files = []
     try:
@@ -110,9 +127,10 @@ def process_cityjson_file(cityjson_file: Path, ignore_duplicate: bool) -> None:
                     click.echo(f"Failed to convert {cityjson_file} at LoD {lod}.\nError: {ex}")
                     continue
             if output_ifc_files:
-                with zipfile.ZipFile(zip_filename, 'w') as zf:
+                with zipfile.ZipFile(zip_tmp, 'w') as zf:
                     for ifc_file in output_ifc_files:
                         zf.write(ifc_file, os.path.basename(ifc_file))
+                os.rename(zip_tmp, zip_filename)
                 click.echo(f"Zipped IFC files into {zip_filename}.")
                 click.echo(f"Processed {cityjson_file} and created {zip_filename}.")
             else:
